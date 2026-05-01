@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星火履约经营看板 | SparkFire Business Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #111827;
+  --bg-card: #1a1f2e;
+  --border: #1e2a3a;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-green: #10b981;
+  --accent-orange: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-purple: #8b5cf6;
+  --accent-pink: #ec4899;
+}
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  min-height: 100vh; overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(6,182,212,0.05) 0%, transparent 50%);
+  pointer-events: none; z-index: 0;
+}
+.header { position: relative; z-index: 1; padding: 24px 32px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, rgba(17,24,39,0.95) 0%, rgba(10,14,23,0) 100%); }
+.header-left { display: flex; align-items: center; gap: 16px; }
+.logo-icon { width: 42px; height: 42px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 20px rgba(59,130,246,0.3); }
+.header h1 { font-size: 22px; font-weight: 700; background: linear-gradient(135deg, #e2e8f0, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.update-badge { background: rgba(16,185,129,0.15); color: var(--accent-green); padding: 4px 12px; border-radius: 20px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.update-dot { width: 6px; height: 6px; background: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+.container { position: relative; z-index: 1; padding: 20px 32px 32px; max-width: 1600px; margin: 0 auto; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; border-radius: 4px 0 0 4px; }
+.kpi-card:nth-child(1)::before { background: var(--accent-blue); }
+.kpi-card:nth-child(2)::before { background: var(--accent-orange); }
+.kpi-card:nth-child(3)::before { background: var(--accent-red); }
+.kpi-card:nth-child(4)::before { background: var(--accent-purple); }
+.kpi-card:nth-child(5)::before { background: var(--accent-cyan); }
+.kpi-card:nth-child(6)::before { background: var(--accent-green); }
+.kpi-card:nth-child(7)::before { background: var(--accent-pink); }
+.kpi-card:nth-child(8)::before { background: var(--accent-blue); }
+.kpi-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-value { font-size: 28px; font-weight: 700; }
+.kpi-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+.kpi-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 32px; opacity: 0.15; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; min-height: 380px; }
+.chart-card.full-width { grid-column: 1 / -1; min-height: 400px; }
+.chart-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.chart-title::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--accent-blue); }
+.chart-body { width: 100%; height: calc(100% - 32px); min-height: 320px; }
+.footer { text-align: center; padding: 16px; color: var(--text-secondary); font-size: 11px; border-top: 1px solid var(--border); position: relative; z-index: 1; }
+.loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; z-index: 999; transition: opacity 0.5s; }
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loading-spinner { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .chart-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .kpi-grid { grid-template-columns: 1fr; } .header { flex-direction: column; gap: 12px; align-items: flex-start; } .container { padding: 16px; } }
+</style>
+</head>
+<body>
+<div class="loading-overlay" id="loading"><div class="loading-spinner"></div></div>
+<header class="header">
+  <div class="header-left">
+    <div class="logo-icon">&#x1F4CA;</div>
+    <div><h1>星火履约经营看板</h1><div class="header-subtitle">SparkFire Contract Fulfillment &amp; Business Dashboard</div></div>
+  </div>
+  <div class="header-right">
+    <div class="update-badge"><span class="update-dot"></span>数据更新：<span id="updateTime">--</span></div>
+  </div>
+</header>
+<div class="container">
+  <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">业务单元合同金额分布</div><div class="chart-body" id="chartBizUnit"></div></div>
+    <div class="chart-card"><div class="chart-title">项目分类结构</div><div class="chart-body" id="chartClassification"></div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">合同签订年份趋势</div><div class="chart-body" id="chartYearTrend"></div></div>
+    <div class="chart-card"><div class="chart-title">交付部合同金额 TOP8</div><div class="chart-body" id="chartDept"></div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">26年区域合同金额 TOP10</div><div class="chart-body" id="chartRegion"></div></div>
+    <div class="chart-card"><div class="chart-title">货款类别构成</div><div class="chart-body" id="chartPayment"></div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">节点完成情况</div><div class="chart-body" id="chartNodeStatus"></div></div>
+    <div class="chart-card"><div class="chart-title">26年历史包袱转化预测（季度）</div><div class="chart-body" id="chartQuarterly"></div></div>
+  </div>
+  <div class="chart-grid" style="grid-template-columns:1fr">
+    <div class="chart-card full-width"><div class="chart-title">营销转化漏斗 — 各业务线对比</div><div class="chart-body" id="chartMarketing" style="min-height:420px;"></div></div>
+  </div>
+</div>
+<footer class="footer">星火履约经营看板 · 数据源自 OTC 履约系统 &amp; POMP 项目管理系统 · 自动生成于 <span id="footerTime">--</span></footer>
+<script>
+var D={"summary":{"totalContractAmount":968542.18,"totalUnbilled":68444.06,"totalConvertedUncollected":20645.12,"totalRows":3547,"exportTime":"2026-05-01 22:12:34"},"classification":[{"name":"历史已完结","count":1657,"amount":447934.94,"unbilled":5210.45},{"name":"存量","count":834,"amount":271139.82,"unbilled":43068.06},{"name":"26年前已转化未回款","count":406,"amount":94291.03,"unbilled":5657.07},{"name":"存量-质","count":340,"amount":93319.04,"unbilled":2294.62},{"name":"增量","count":162,"amount":35733.55,"unbilled":9808.04},{"name":"待冲销收入","count":55,"amount":11893.14,"unbilled":148},{"name":"增量-质","count":30,"amount":7416.43,"unbilled":592.83},{"name":"增量-预","count":32,"amount":5029.26,"unbilled":1310.39},{"name":"诉讼","count":4,"amount":816,"unbilled":0},{"name":"节点作废","count":13,"amount":784.85,"unbilled":264},{"name":"合同作废","count":14,"amount":184.11,"unbilled":90.61}],"businessUnits":[{"name":"金融","count":2920,"amount":547859.76,"unbilled":25370.16},{"name":"央国企","count":423,"amount":302197.05,"unbilled":26881.24},{"name":"数智运营","count":77,"amount":63512.06,"unbilled":15222.14},{"name":"保险经纪","count":95,"amount":53524.09,"unbilled":674.87},{"name":"公共","count":10,"amount":746.06,"unbilled":126},{"name":"商城业务","count":22,"amount":703.16,"unbilled":169.65}],"nodeStatus":[{"name":"已完结","count":1807},{"name":"交付中","count":1228},{"name":"已交付未回款","count":422},{"name":"待冲销收入","count":55},{"name":"合同作废","count":14},{"name":"节点作废","count":13},{"name":"诉讼","count":4},{"name":"/","count":4}],"deliveryDept":[{"name":"金融系统部交付部","count":2561,"amount":497987.94},{"name":"行业交付部","count":244,"amount":161752.72},{"name":"油气系统部","count":151,"amount":129560.13},{"name":"数智运营产品线产品二部","count":86,"amount":63729.28},{"name":"业务运营中心","count":368,"amount":56061.27},{"name":"保险及商城运营部-保险","count":95,"amount":53524.09},{"name":"数智运营产品线客户成功部","count":10,"amount":3890},{"name":"金融异常","count":9,"amount":1083.7},{"name":"军团公共","count":7,"amount":441.94},{"name":"保险及商城运营部-商城","count":14,"amount":438.3}],"paymentTypes":[{"name":"里程碑款","count":876,"amount":294843.12},{"name":"服务运营款","count":405,"amount":176205.29},{"name":"终验款","count":663,"amount":145584.62},{"name":"质保金","count":544,"amount":124493.89},{"name":"预付款-合同签订款","count":468,"amount":108708.63},{"name":"初验款","count":247,"amount":67454.04},{"name":"上线运行款","count":119,"amount":20720.45},{"name":"到货验收款","count":94,"amount":16499.68},{"name":"人员进场款","count":39,"amount":4289.49}],"regions":[{"name":"北京地区部","count":727,"amount":176250.25},{"name":"油气大客户部","count":87,"amount":163534.43},{"name":"苏浙皖地区部","count":606,"amount":142178.89},{"name":"中西地区部","count":533,"amount":105517.32},{"name":"行业自营","count":138,"amount":72822.51},{"name":"华南地区部","count":483,"amount":62785.64},{"name":"软件自营","count":58,"amount":59665.88},{"name":"上海地区部","count":274,"amount":57800.67},{"name":"湘鄂赣地区部","count":163,"amount":28604.71},{"name":"华北地区部","count":206,"amount":22458.19}],"contractYears":[{"name":"2016","count":4,"amount":368.7},{"name":"2017","count":6,"amount":4570},{"name":"2018","count":11,"amount":6188.44},{"name":"2019","count":8,"amount":1213.39},{"name":"2020","count":81,"amount":13209.62},{"name":"2021","count":179,"amount":44068.22},{"name":"2022","count":415,"amount":115368.14},{"name":"2023","count":495,"amount":84198.71},{"name":"2024","count":1006,"amount":403427.81},{"name":"2025","count":1089,"amount":249626.99},{"name":"2026","count":246,"amount":45776.18}],"marketing":[{"name":"营销决策产品线/业务运营中心","base":6690.42,"converted":1049.83,"collected":688.43,"predicted":4096.48,"conversionRate":15.7},{"name":"存客/战客一部","base":3662.67,"converted":672.74,"collected":478.43,"predicted":1953.39,"conversionRate":18.4},{"name":"区域银行","base":1026.67,"converted":17.81,"collected":0,"predicted":303.36,"conversionRate":1.7},{"name":"央国企销售二部","base":900,"converted":180,"collected":180,"predicted":855,"conversionRate":20},{"name":"战客二部","base":394.45,"converted":0,"collected":0,"predicted":342.45,"conversionRate":0},{"name":"央国企销售五部","base":290.5,"converted":124.5,"collected":0,"predicted":269.75,"conversionRate":42.9},{"name":"央国企销售三部","base":190.4,"converted":0,"collected":0,"predicted":163.2,"conversionRate":0},{"name":"非银金融","base":165.72,"converted":54.78,"collected":30,"predicted":161.32,"conversionRate":33.1},{"name":"非金","base":60,"converted":0,"collected":0,"predicted":48,"conversionRate":0}],"quarterlyForecast":{"q1":796,"q2":2020,"q3":1741,"q4":4130}};
+function W(v){return(v/1e4).toFixed(2)+'亿'}
+function S(v){return v>=1e4?(v/1e4).toFixed(1)+'亿':v.toFixed(0)+'万'}
+function P(v){return v.toFixed(1)+'%'}
+var C=['#3b82f6','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#d946ef'];
+var T={backgroundColor:'rgba(17,24,39,0.95)',borderColor:'#1e2a3a',textStyle:{color:'#e2e8f0',fontSize:12}};
+var G={left:'3%',right:'8%',top:10,bottom:20,containLabel:!0};
+var AL={color:'#64748b',fontSize:10};
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('updateTime').textContent=D.summary.exportTime;
+  document.getElementById('footerTime').textContent=D.summary.exportTime;
+  K();bizUnit();classification();yearTrend();dept();region();payment();nodeStatus();quarterly();marketing();
+  setTimeout(function(){document.getElementById('loading').classList.add('hidden')},400);
+  window.addEventListener('resize',function(){
+    ['chartBizUnit','chartClassification','chartYearTrend','chartDept','chartRegion','chartPayment','chartNodeStatus','chartQuarterly','chartMarketing'].forEach(function(id){
+      var d=document.getElementById(id);if(d){var c=echarts.getInstanceByDom(d);if(c)c.resize()}
+    })
+  })
+});
+function K(){
+  var s=D.summary;
+  var cards=[
+    {l:'合同总额',v:W(s.totalContractAmount),b:s.totalRows+' 个付款节点',c:'#3b82f6'},
+    {l:'未计收金额',v:W(s.totalUnbilled),b:'占比 '+P(s.totalUnbilled/s.totalContractAmount*100),c:'#f59e0b'},
+    {l:'已转化未回款',v:W(s.totalConvertedUncollected),b:'待催收款项',c:'#ef4444'},
+    {l:'基准回款金额',v:W(206049.68),b:'回款率 79.0%',c:'#8b5cf6'},
+    {l:'在途项目',v:'1,228',b:'已完结 1,807 | 交付中 1,228',c:'#06b6d4'},
+    {l:'营销转化率',v:'17.6%',b:'基础盘 14,125 万元',c:'#10b981'},
+    {l:'营销回款率',v:'79.0%',b:'已回款 1,958 万元',c:'#ec4899'},
+    {l:'26年预测转化',v:'9,900万',b:'季度 Q1-Q4 递进',c:'#3b82f6'}
+  ];
+  document.getElementById('kpiGrid').innerHTML=cards.map(function(c){return '<div class="kpi-card"><div class="kpi-icon">&#x1F4CA;</div><div class="kpi-label">'+c.l+'</div><div class="kpi-value" style="color:'+c.c+'">'+c.v+'</div><div class="kpi-sub">'+c.b+'</div></div>'}).join('')
+}
+function I(id){var d=document.getElementById(id);return d?echarts.init(d,null,{devicePixelRatio:2}):null}
+function bizUnit(){
+  var c=I('chartBizUnit');
+  var d=[].concat(D.businessUnits).sort(function(a,b){return b.amount-a.amount});
+  c.setOption({tooltip:T,grid:{left:90,right:80,top:10,bottom:20},
+    xAxis:{type:'value',name:'万元',nameTextStyle:{color:'#94a3b8',fontSize:11},axisLabel:AL,splitLine:{lineStyle:{color:'rgba(30,42,58,0.6)'}}},
+    yAxis:{type:'category',data:d.map(function(x){return x.name}),inverse:!0,axisLabel:{color:'#94a3b8',fontSize:11}},
+    series:[{type:'bar',data:d.map(function(x,i){return{value:x.amount,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:C[i%12]},{offset:1,color:C[i%12]+'40'}])}}}),barWidth:20,label:{show:!0,position:'right',color:'#94a3b8',fontSize:10,formatter:function(p){return S(p.value)}},itemStyle:{borderRadius:[0,4,4,0]}},
+      {type:'bar',data:d.map(function(x){return x.unbilled}),barWidth:20,barGap:'-100%',itemStyle:{color:'rgba(239,68,68,0.5)',borderRadius:[0,4,4,0]},label:{show:!0,position:'right',color:'#ef4444',fontSize:9,formatter:function(p){return p.value>0?'未计收:'+S(p.value):''}}}]})
+}
+function classification(){
+  var c=I('chartClassification');
+  var d=D.classification;
+  c.setOption({tooltip:Object.assign({},T,{formatter:function(p){return p.name+'<br/>合同额: '+S(p.value)+'<br/>笔数: '+(d.find(function(x){return x.name===p.name})||{}).count}}),
+    legend:{orient:'vertical',right:0,top:'middle',textStyle:{color:'#94a3b8',fontSize:10},itemWidth:10,itemHeight:10},
+    series:[{type:'pie',radius:['55%','80%'],center:['42%','52%'],data:d.map(function(x,i){return{name:x.name,value:x.amount,itemStyle:{color:C[i%12]}}}),label:{color:'#94a3b8',fontSize:10,formatter:'{b}'}}]})
+}
+function yearTrend(){
+  var c=I('chartYearTrend');
+  var d=D.contractYears;
+  c.setOption({tooltip:T,grid:{left:'3%',right:'8%',top:20,bottom:30},
+    xAxis:{type:'category',data:d.map(function(x){return x.name}),axisLabel:{color:'#64748b',fontSize:10}},
+    yAxis:[{type:'value',name:'合同金额(万元)',nameTextStyle:{color:'#94a3b8',fontSize:11},axisLabel:AL,splitLine:{lineStyle:{color:'rgba(30,42,58,0.6)'}}},
+      {type:'value',name:'笔数',nameTextStyle:{color:'#94a3b8',fontSize:11},axisLabel:AL}],
+    series:[{name:'合同金额',type:'bar',data:d.map(function(x){return x.amount}),yAxisIndex:0,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#3b82f6'},{offset:1,color:'#1d4ed8'}]),borderRadius:[4,4,0,0]}},
+      {name:'付款笔数',type:'line',data:d.map(function(x){return x.count}),yAxisIndex:1,lineStyle:{color:'#06b6d4',width:2},symbol:'circle',symbolSize:8,itemStyle:{color:'#06b6d4'},label:{show:!0,color:'#06b6d4',fontSize:10,formatter:'{c}笔'}}]})
+}
+function dept(){
+  var c=I('chartDept');
+  var d=D.deliveryDept.slice(0,8).reverse();
+  c.setOption({tooltip:T,grid:{left:140,right:80,top:10,bottom:20},
+    xAxis:{type:'value',name:'万元',nameTextStyle:{color:'#94a3b8',fontSize:11},axisLabel:AL,splitLine:{lineStyle:{color:'rgba(30,42,58,0.6)'}}},
+    yAxis:{type:'category',data:d.map(function(x){return x.name}),axisLabel:{color:'#94a3b8',fontSize:10}},
+    series:[{type:'bar',data:d.map(function(x,i){return{value:x.amount,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:C[7-i]},{offset:1,color:C[7-i]+'30'}])}}}),barWidth:18,label:{show:!0,position:'right',color:'#94a3b8',fontSize:10,formatter:function(p){return S(p.value)}},itemStyle:{borderRadius:[0,4,4,0]}}]})
+}
+function region(){
+  var c=I('chartRegion');
+  var d=D.regions.slice(0,10).reverse();
+  c.setOption({tooltip:T,grid:{left:110,right:80,top:10,bottom:20},
+    xAxis:{type:'value',name:'万元',nameTextStyle:{color:'#94a3b8',fontSize:11},axisLabel:AL,splitLine:{lineStyle:{color:'rgba(30,42,58,0.6)'}}},
+    yAxis:{type:'category',data:d.map(function(x){return x.name}),axisLabel:{color:'#94a3b8',fontSize:10}},
+    series:[{type:'bar',data:d.map(function(x,i){return{value:x.amount,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:C[9-i]},{offset:1,color:C[9-i]+'30'}])}}}),barWidth:18,label:{show:!0,position:'right',color:'#94a3b8',fontSize:10,formatter:function(p){return S(p.value)}},itemStyle:{borderRadius:[0,4,4,0]}}]})
+}
+function payment(){
+  var c=I('chartPayment');
+  var d=D.paymentTypes.slice(0,9);
+  c.setOption({tooltip:Object.assign({},T,{formatter:function(p){return p.name+'<br/>金额: '+S(p.value)+'<br/>占比: '+p.percent+'%'}}),
+    series:[{type:'treemap',data:d.map(function(x,i){return{name:x.name,value:x.amount,itemStyle:{color:C[i]}}}),label:{color:'#fff',fontSize:11,formatter:'{b}'},upperLabel:{show:!0,height:24,color:'#94a3b8',fontSize:10},roam:!1,nodeClick:!1,breadcrumb:{show:!1},levels:[{itemStyle:{borderColor:'#0a0e17',borderWidth:2,gapWidth:2}}]}]})
+}
+function nodeStatus(){
+  var c=I('chartNodeStatus');
+  var d=D.nodeStatus.filter(function(x){return x.count>10});
+  var t=d.reduce(function(s,x){return s+x.count},0);
+  c.setOption({tooltip:Object.assign({},T,{formatter:function(p){return p.name+'<br/>笔数: '+p.value+'<br/>占比: '+(p.value/t*100).toFixed(1)+'%'}}),
+    series:[{type:'pie',radius:['50%','78%'],center:['50%','55%'],data:d.map(function(x,i){return{name:x.name,value:x.count,itemStyle:{color:C[i]}}}),label:{color:'#94a3b8',fontSize:10,formatter:'{b}\n{d}%'}}]})
+}
+function quarterly(){
+  var c=I('chartQuarterly');
+  var q=D.quarterlyForecast;
+  var t=q.q1+q.q2+q.q3+q.q4;
+  c.setOption({tooltip:T,grid:{left:'3%',right:'8%',top:40,bottom:30},
+    xAxis:{type:'category',data:['Q1','Q2','Q3','Q4'],axisLabel:{color:'#94a3b8',fontSize:12,fontWeight:'bold'}},
+    yAxis:{type:'value',name:'万元',nameTextStyle:{color:'#94a3b8',fontSize:11},axisLabel:AL,splitLine:{lineStyle:{color:'rgba(30,42,58,0.6)'}}},
+    series:[{type:'bar',data:[
+      {value:q.q1,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#3b82f6'},{offset:1,color:'#1d4ed8'}])}},
+      {value:q.q2,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#06b6d4'},{offset:1,color:'#0e7490'}])}},
+      {value:q.q3,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#10b981'},{offset:1,color:'#047857'}])}},
+      {value:q.q4,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#8b5cf6'},{offset:1,color:'#6d28d9'}])}}
+    ],barWidth:40,itemStyle:{borderRadius:[8,8,0,0]},label:{show:!0,position:'top',color:'#e2e8f0',fontSize:12,fontWeight:'bold',formatter:function(p){return p.value+'万'}}},
+    {type:'line',data:[q.q1,q.q2,q.q3,q.q4],lineStyle:{color:'#f59e0b',width:2,type:'dashed'},symbol:'diamond',symbolSize:12,itemStyle:{color:'#f59e0b'}}],
+    graphic:[{type:'text',left:'center',top:5,style:{text:'全年预测: '+t+' 万元',fill:'#f59e0b',fontSize:13,fontWeight:'bold'}}]})
+}
+function marketing(){
+  var c=I('chartMarketing');
+  var d=D.marketing.filter(function(x){return x.base>0}).slice(0,9).reverse();
+  c.setOption({tooltip:T,legend:{data:['基础盘','已转化','已回款','预测转化'],bottom:0,textStyle:{color:'#94a3b8',fontSize:11}},
+    grid:{left:150,right:'5%',top:10,bottom:40},
+    xAxis:{type:'value',name:'万元',nameTextStyle:{color:'#94a3b8',fontSize:11},axisLabel:AL,splitLine:{lineStyle:{color:'rgba(30,42,58,0.6)'}}},
+    yAxis:{type:'category',data:d.map(function(x){return x.name}),axisLabel:{color:'#94a3b8',fontSize:10}},
+    series:[
+      {name:'基础盘',type:'bar',data:d.map(function(x){return x.base}),barWidth:14,itemStyle:{color:'#3b82f6',borderRadius:[0,2,2,0]}},
+      {name:'已转化',type:'bar',data:d.map(function(x){return x.converted}),barWidth:14,itemStyle:{color:'#10b981',borderRadius:[0,2,2,0]}},
+      {name:'已回款',type:'bar',data:d.map(function(x){return x.collected}),barWidth:14,itemStyle:{color:'#06b6d4',borderRadius:[0,2,2,0]}},
+      {name:'预测转化',type:'bar',data:d.map(function(x){return x.predicted}),barWidth:14,itemStyle:{color:'#f59e0b',borderRadius:[0,2,2,0]}}
+    ]})
+}
+</script>
+</body>
+</html>

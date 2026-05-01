@@ -1,0 +1,4 @@
+conversations/
+*.py
+*.xlsx
+.DS_Store
